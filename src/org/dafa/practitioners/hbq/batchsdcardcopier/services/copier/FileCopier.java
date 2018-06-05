@@ -4,6 +4,8 @@ import java.io.*;
 
 public class FileCopier {
 
+    private static final int COPY_BUFFER_LENGTH = 512 * 1024;
+
     private File sourceFile;
     private File destinationFile;
     private volatile boolean cancelled = false;
@@ -60,7 +62,7 @@ public class FileCopier {
             long copied = 0;
             final long total = sourceFile.length();
 
-            byte[] buf = new byte[512 * 1024];
+            byte[] buf = new byte[COPY_BUFFER_LENGTH];
             int len;
             while ((len = fis.read(buf)) > 0) {
                 if (cancelled) {

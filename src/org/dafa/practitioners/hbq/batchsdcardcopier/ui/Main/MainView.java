@@ -9,6 +9,10 @@ import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.TextField;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
@@ -18,6 +22,7 @@ import org.dafa.practitioners.hbq.batchsdcardcopier.services.drive.DriveEjectorF
 import org.dafa.practitioners.hbq.batchsdcardcopier.services.drive.DriveScannerFactory;
 import org.dafa.practitioners.hbq.batchsdcardcopier.ui.MultiProgressDialog;
 
+import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
@@ -67,11 +72,28 @@ public class MainView extends AnchorPane implements MvpContract.View {
 		lstDrives.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 
 		ContextMenu contextMenu = new ContextMenu();
+
+		MenuItem openItem = new MenuItem();
+		openItem.setId("open");
+		openItem.setText("Open in explorer");
+		openItem.setOnAction(event -> openDirInExplorer());
+		contextMenu.getItems().add(openItem);
+
+		contextMenu.getItems().add(new SeparatorMenuItem());
+
 		MenuItem ejectItem = new MenuItem();
+		openItem.setId("eject");
 		ejectItem.setText("Eject");
 		ejectItem.setOnAction(ejectMenuEventHandler);
 		contextMenu.getItems().add(ejectItem);
+
 		lstDrives.setContextMenu(contextMenu);
+
+		lstDrives.setOnMouseClicked(click -> {
+            if (click.getClickCount() == 2) {
+				openDirInExplorer();
+            }
+        });
 
 		btnOk.setDefaultButton(true);
 		btnOk.setOnAction(event -> presenter.doCopy());
@@ -108,21 +130,32 @@ public class MainView extends AnchorPane implements MvpContract.View {
 		Platform.runLater(runnable);
 	}
 
-	private EventHandler<ActionEvent> ejectMenuEventHandler = new EventHandler<>() {
-		@Override
-		public void handle(ActionEvent event) {
-			for (String drive : getTargetDrives()) {
-				if (Main.isTestDrive(drive)) {
-					File f = new File(drive);
-					if (f.exists()) {
-						removeDrive(drive);
-						Main.deleteDir(f);
-					}
+	private EventHandler<ActionEvent> ejectMenuEventHandler = event ->  {
+		for (String drive : getTargetDrives()) {
+			if (Main.isTestDrive(drive)) {
+				File f = new File(drive);
+				if (f.exists()) {
+					removeDrive(drive);
+					Main.deleteDir(f);
 				}
 			}
-			presenter.ejectSelectedDrives();
 		}
+		presenter.ejectSelectedDrives();
 	};
+
+	private void openDirInExplorer() {
+		if (getTargetDrives().isEmpty()) {
+			return;
+		}
+		String drive = getTargetDrives().get(0);
+		if (Desktop.isDesktopSupported()) {
+			try {
+				Desktop.getDesktop().open(new File(drive));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
 
 	@Override
 	public String getSourceDirectory() {

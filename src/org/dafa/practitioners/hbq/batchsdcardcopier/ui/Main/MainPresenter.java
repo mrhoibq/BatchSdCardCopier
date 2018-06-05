@@ -163,7 +163,9 @@ public class MainPresenter extends BasePresenter<MvpContract.View> implements Mv
 
     @Override
     public void onProgressUpdated(File targetDirectory, File file, int fileProgress, int totalProgress) {
-        System.err.println("Progress updated - " + targetDirectory.getAbsolutePath() + ": " + totalProgress + "%");
+        if (totalProgress % 20 == 0) {
+            System.out.println("Progress updated - " + targetDirectory.getAbsolutePath() + ": " + totalProgress + "%");
+        }
         getView().reportCopyProgressUpdated(targetDirectory, file, fileProgress, totalProgress);
     }
 
@@ -174,16 +176,18 @@ public class MainPresenter extends BasePresenter<MvpContract.View> implements Mv
 
     @Override
     public void onFileError(File targetDirectory, File file, Throwable error) {
-
+        System.err.println("Error copying file: " + file.getName() + ": " + error.getMessage());
     }
 
     @Override
     public void onCancelled(File targetDirectory) {
+        System.out.println("Copying cancelled: " + targetDirectory.getAbsolutePath());
         getView().reportDirectoryCopyingCancelled(targetDirectory);
     }
 
     @Override
     public void onFinished(File targetDirectory) {
+        System.out.println("Copying finished: " + targetDirectory.getAbsolutePath());
         getView().reportDirectoryCopyingFinished(targetDirectory);
         if (getView().isEjectDriveOnFinishEnabled()) {
             driveEjector.eject(targetDirectory);
@@ -192,6 +196,7 @@ public class MainPresenter extends BasePresenter<MvpContract.View> implements Mv
 
     @Override
     public void onAllFinished(BatchCopyService batchCopyService, long totalCopyTime) {
+        System.out.println("All copying finished: " + totalCopyTime + "ms");
         activeBatchCopyServices.remove(batchCopyService);
         // Restart drive scanner
         driveScanner.start(this);
@@ -202,6 +207,7 @@ public class MainPresenter extends BasePresenter<MvpContract.View> implements Mv
 
     @Override
     public void onAllCancelled(BatchCopyService batchCopyService) {
+        System.out.println("All Copying cancelled: " + batchCopyService);
         activeBatchCopyServices.remove(batchCopyService);
         // Restart drive scanner
         driveScanner.start(this);
