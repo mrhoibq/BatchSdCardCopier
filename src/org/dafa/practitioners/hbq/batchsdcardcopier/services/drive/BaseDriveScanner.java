@@ -1,53 +1,57 @@
 package org.dafa.practitioners.hbq.batchsdcardcopier.services.drive;
 
-abstract class BaseDriveScanner implements DriveScanner, Runnable {
+import java.io.File;
 
-    private DrivePlugListener listener;
-    private Thread scannerThread;
+public abstract class BaseDriveScanner implements DriveScanner, Runnable {
 
-    @Override
-    public synchronized void start(DrivePlugListener listener) {
-        if (scannerThread == null || !scannerThread.isAlive()) {
-            this.listener = listener;
-            scannerThread = new Thread(this);
-            scannerThread.setDaemon(true);
-            scannerThread.setPriority(Thread.MIN_PRIORITY);
-            scannerThread.start();
-        }
-    }
+	public static volatile File mountRoot = null;
 
-    @Override
-    public void run() {
-        while (scannerThread != null && !scannerThread.isInterrupted()) {
-            scan(listener);
-            sleep(2000);
-        }
-    }
+	private DrivePlugListener listener;
+	private Thread scannerThread;
 
-    protected abstract void scan(DrivePlugListener listener);
+	@Override
+	public synchronized void start(DrivePlugListener listener) {
+		if (scannerThread == null || !scannerThread.isAlive()) {
+			this.listener = listener;
+			scannerThread = new Thread(this);
+			scannerThread.setDaemon(true);
+			scannerThread.setPriority(Thread.MIN_PRIORITY);
+			scannerThread.start();
+		}
+	}
 
-    protected void onStarted() {
+	@Override
+	public void run() {
+		while (scannerThread != null && !scannerThread.isInterrupted()) {
+			scan(listener);
+			sleep(2000);
+		}
+	}
 
-    }
+	protected abstract void scan(DrivePlugListener listener);
 
-    protected void onStopped() {
+	protected void onStarted() {
 
-    }
+	}
 
-    private void sleep(long millis) {
-        try {
-            Thread.sleep(millis);
-        } catch (InterruptedException ignore) {
+	protected void onStopped() {
 
-        }
-    }
+	}
 
-    @Override
-    public synchronized void stop() {
-        listener = null;
-        if (scannerThread != null) {
-            scannerThread.interrupt();
-            scannerThread = null;
-        }
-    }
+	private void sleep(long millis) {
+		try {
+			Thread.sleep(millis);
+		} catch (InterruptedException ignore) {
+
+		}
+	}
+
+	@Override
+	public synchronized void stop() {
+		listener = null;
+		if (scannerThread != null) {
+			scannerThread.interrupt();
+			scannerThread = null;
+		}
+	}
 }

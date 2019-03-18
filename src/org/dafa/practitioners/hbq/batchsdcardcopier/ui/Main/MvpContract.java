@@ -8,34 +8,62 @@ import java.io.File;
 
 final class MvpContract {
 
-    interface View extends MvpView {
-        void addDrive(String absolutePath);
-        void removeDrive(String absolutePath);
-        String getSourceDirectory();
-        void showError(String message);
-        ObservableList<String> getTargetDrives();
-        void close();
-        void reportFileStartedToCopy(File targetDirectory, File file);
-        void reportCopyProgressUpdated(File targetDirectory, File file, int fileProgress, int totalProgress);
-        void reportFileCopyingFinished(File targetDirectory, File file);
-        void reportDirectoryCopyingCancelled(File targetDirectory);
-        void reportDirectoryCopyingFinished(File targetDirectory);
-        void reportAllCopyingFinished(long totalTime);
-        void reportDirectoryCopingStarted(File targetDirectory);
-        boolean isEjectDriveOnFinishEnabled();
-        void reportAllCopyingCancelled();
-        void setStartManualCopyButtonEnabled(boolean enabled);
-        void setStartAutoCopyModeButtonText(String text);
-        void reportDirectoryCopyingError(File targetDirectory, Throwable error);
-        void setSourceDirectorySelectionEnabled(boolean enabled);
-    }
+	interface View extends MvpView {
+		void addDrive(String absolutePath);
 
-    interface Presenter extends MvpPresenter<View> {
-        void doCopy();
-        void cancelAndExit();
-        void cancelCopying();
-        void toggleAutoCopyMode();
-        void ejectSelectedDrives();
-    }
+		void removeDrive(String absolutePath);
+
+		String getSourceDirectory();
+
+		void showError(String message);
+
+		ObservableList<String> getTargetDrives();
+
+		void close();
+
+		void reportFileStartedToCopy(File targetDirectory, File file);
+
+		void reportCopyProgressUpdated(File targetDirectory, File file, int fileProgress, int totalProgress);
+
+		void reportFileCopyingFinished(File targetDirectory, File file);
+
+		void reportDirectoryCopyingCancelled(File targetDirectory);
+
+		void reportDirectoryCopyingFinished(File targetDirectory);
+
+		void reportAllCopyingFinished(long totalTime);
+
+		void reportDirectoryCopingStarted(File targetDirectory);
+
+		boolean isEjectDriveOnFinishEnabled();
+
+		void reportAllCopyingCancelled();
+
+		void setStartManualCopyButtonEnabled(boolean enabled);
+
+		void setStartAutoCopyModeButtonText(String text);
+
+		void reportDirectoryCopyingError(File targetDirectory, Throwable error);
+
+		void setSourceDirectorySelectionEnabled(boolean enabled);
+
+		void setEjectCheckboxEnabled(boolean enabled);
+
+		boolean showConfirm(String s);
+	}
+
+	interface Presenter extends MvpPresenter<View> {
+		void doCopy();
+
+		void cancelAndExit();
+
+		void cancelCopying();
+
+		void toggleAutoCopyMode();
+
+		void ejectSelectedDrives();
+
+		void deleteSDCard();
+	}
 
 }

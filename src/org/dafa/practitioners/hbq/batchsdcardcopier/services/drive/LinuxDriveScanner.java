@@ -1,17 +1,13 @@
 package org.dafa.practitioners.hbq.batchsdcardcopier.services.drive;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.attribute.FileOwnerAttributeView;
-import java.nio.file.attribute.UserPrincipal;
 import java.util.ArrayList;
 
-public class OsxDriveScanner extends BaseDriveScanner {
+public class LinuxDriveScanner extends BaseDriveScanner {
 
 	private ArrayList<String> drives = new ArrayList<>();
 
-	OsxDriveScanner() {
+	LinuxDriveScanner() {
 
 	}
 
@@ -29,8 +25,13 @@ public class OsxDriveScanner extends BaseDriveScanner {
 
 	@Override
 	protected void scan(DrivePlugListener listener) {
+		File[] volumes = listVolumes();
+		if (volumes == null) {
+			return;
+		}
+
 		// Check for newly plugged in drives:
-		for (File root : listVolumes()) {
+		for (File root : volumes) {
 			final String rootPath = root.getAbsolutePath();
 			if (!drives.contains(rootPath)) {
 				drives.add(rootPath);
@@ -48,27 +49,9 @@ public class OsxDriveScanner extends BaseDriveScanner {
 	}
 
 	private File[] listVolumes() {
-		File file = mountRoot != null ? mountRoot : new File("/Volumes");
-		return file.listFiles(this::filter);
-	}
-
-	private boolean filter(File f) {
-		if (!f.isDirectory() || f.isHidden() || !f.canWrite()) {
-			return false;
+		if (mountRoot == null) {
+			return null;
 		}
-
-		FileOwnerAttributeView foav = Files.getFileAttributeView(f.toPath(),
-				FileOwnerAttributeView.class);
-		try {
-			UserPrincipal owner = foav.getOwner();
-			boolean isRoot = owner.getName().equals("root");
-			if (isRoot) {
-				return false;
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
-		return true;
+		return mountRoot.listFiles(f -> f.isDirectory() && !f.isHidden() && f.canWrite());
 	}
 }

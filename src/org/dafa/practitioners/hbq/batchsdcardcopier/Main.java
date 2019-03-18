@@ -35,6 +35,7 @@ public class Main extends Application {
 	}
 
 	private static ArrayList<File> testDrives = new ArrayList<>();
+
 	public static void enableTestMode(final Stage primaryStage, final MainPresenter presenter) {
 		if (testKeyEventHandler == null) {
 			testKeyEventHandler = new TestKeyEventHandler(presenter);
@@ -44,39 +45,18 @@ public class Main extends Application {
 
 	public static void cleanupTestFiles() {
 		testKeyEventHandler = null;
-        for (File drive : new ArrayList<>(testDrives)) {
-            deleteDir(drive);
-        }
-        testDrives.clear();
-	}
-
-	public static void deleteDir(final File dir) {
-		if (dir == null || !dir.exists()) {
-			return;
+		for (File drive : new ArrayList<>(testDrives)) {
+			Utils.deleteDir(drive);
 		}
-
-		if (dir.isFile()) {
-			//noinspection ResultOfMethodCallIgnored
-			dir.delete();
-			return;
-		}
-
-		File[] files = dir.listFiles();
-		if (files != null && files.length > 0) {
-			for (File file : files) {
-				deleteDir(file);
-			}
-		}
-		//noinspection ResultOfMethodCallIgnored
-		dir.delete();
+		testDrives.clear();
 	}
 
 	public static boolean isTestDrive(String drive) {
-	    for (File f : new ArrayList<>(testDrives)) {
-	        if (f.getAbsolutePath().equalsIgnoreCase(drive)) {
-	            return true;
-            }
-        }
+		for (File f : new ArrayList<>(testDrives)) {
+			if (f.getAbsolutePath().equalsIgnoreCase(drive)) {
+				return true;
+			}
+		}
 		return false;
 	}
 

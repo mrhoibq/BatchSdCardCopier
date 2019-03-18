@@ -6,12 +6,14 @@ import static org.dafa.practitioners.hbq.batchsdcardcopier.Utils.OS;
 
 public class DriveScannerFactory {
 
-    public DriveScanner createDriveScanner() {
-        OS os = Utils.getOS();
-        if (os == OS.OSX) {
-            return new OsxDriveScanner();
-        } else {
-            return new WindowDriveScanner();
-        }
-    }
+	public DriveScanner createDriveScanner() {
+		OS os = Utils.getOS();
+		if (os == OS.OSX) {
+			return new OsxDriveScanner();
+		} else if (os == OS.LINUX) {
+			return new LinuxDriveScanner();
+		} else {
+			return new WindowDriveScanner();
+		}
+	}
 }

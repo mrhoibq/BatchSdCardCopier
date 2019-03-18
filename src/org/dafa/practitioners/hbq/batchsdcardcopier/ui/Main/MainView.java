@@ -12,12 +12,16 @@ import javafx.scene.control.*;
 import javafx.scene.control.Button;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.TextField;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 import org.dafa.practitioners.hbq.batchsdcardcopier.Main;
+import org.dafa.practitioners.hbq.batchsdcardcopier.Utils;
 import org.dafa.practitioners.hbq.batchsdcardcopier.services.copier.BatchCopyServiceFactory;
+import org.dafa.practitioners.hbq.batchsdcardcopier.services.drive.BaseDriveScanner;
 import org.dafa.practitioners.hbq.batchsdcardcopier.services.drive.DriveEjectorFactory;
 import org.dafa.practitioners.hbq.batchsdcardcopier.services.drive.DriveScannerFactory;
 import org.dafa.practitioners.hbq.batchsdcardcopier.ui.MultiProgressDialog;
@@ -25,18 +29,29 @@ import org.dafa.practitioners.hbq.batchsdcardcopier.ui.MultiProgressDialog;
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
+import java.util.EventObject;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 @SuppressWarnings("WeakerAccess")
 public class MainView extends AnchorPane implements MvpContract.View {
-	@FXML TextField txtDir;
-	@FXML Button btnSelectDir;
-	@FXML ListView<String> lstDrives;
-	@FXML CheckBox chkAutoEject;
-	@FXML Button btnOk;
-	@FXML Button btnCancel;
-	@FXML Button btnAutoCopyMode;
-	
+	@FXML
+	TextField txtDir;
+	@FXML
+	Button btnSelectDir;
+	@FXML
+	ListView<String> lstDrives;
+	@FXML
+	CheckBox chkAutoEject;
+	@FXML
+	Button btnOk;
+	@FXML
+	Button btnCancel;
+	@FXML
+	Button btnAutoCopyMode;
+	@FXML
+	Button btnDeleteData;
+
 	private Stage window;
 	private MainPresenter presenter;
 
@@ -44,7 +59,7 @@ public class MainView extends AnchorPane implements MvpContract.View {
 
 	public MainView(Stage window) {
 		this.window = window;
-				
+
 		FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("MainView.fxml"));
 		fxmlLoader.setRoot(this);
 		fxmlLoader.setController(this);
@@ -82,18 +97,24 @@ public class MainView extends AnchorPane implements MvpContract.View {
 		contextMenu.getItems().add(new SeparatorMenuItem());
 
 		MenuItem ejectItem = new MenuItem();
-		openItem.setId("eject");
+		ejectItem.setId("eject");
 		ejectItem.setText("Eject");
 		ejectItem.setOnAction(ejectMenuEventHandler);
 		contextMenu.getItems().add(ejectItem);
 
+		MenuItem deleteItem = new MenuItem();
+		deleteItem.setId("delete");
+		deleteItem.setText("Delete data");
+		deleteItem.setOnAction(ejectMenuEventHandler);
+		contextMenu.getItems().add(deleteItem);
+
 		lstDrives.setContextMenu(contextMenu);
 
 		lstDrives.setOnMouseClicked(click -> {
-            if (click.getClickCount() == 2) {
+			if (click.getClickCount() == 2) {
 				openDirInExplorer();
-            }
-        });
+			}
+		});
 
 		btnOk.setDefaultButton(true);
 		btnOk.setOnAction(event -> presenter.doCopy());
@@ -101,6 +122,7 @@ public class MainView extends AnchorPane implements MvpContract.View {
 		btnSelectDir.setOnAction(event -> pickSourceDirectory());
 		btnCancel.setOnAction(event -> presenter.cancelAndExit());
 		btnAutoCopyMode.setOnAction(event -> presenter.toggleAutoCopyMode());
+		btnDeleteData.setOnAction(event -> presenter.deleteSDCard());
 
 		window.setOnCloseRequest(event -> {
 			Main.cleanupTestFiles();
@@ -108,6 +130,20 @@ public class MainView extends AnchorPane implements MvpContract.View {
 		});
 
 		Main.enableTestMode(window, presenter); // TODO: For testing only
+
+		window.addEventFilter(KeyEvent.ANY, event -> {
+			if (event.isControlDown()
+					&& event.isAltDown()
+					&& event.isShiftDown()
+					&& event.getCode() == KeyCode.D
+			) {
+				DirectoryChooser chooser = new DirectoryChooser();
+				File selectedDir = chooser.showDialog(window);
+				if (selectedDir != null && selectedDir.exists()) {
+					BaseDriveScanner.mountRoot = selectedDir;
+				}
+			}
+		});
 	}
 
 	private void pickSourceDirectory() {
@@ -130,17 +166,28 @@ public class MainView extends AnchorPane implements MvpContract.View {
 		Platform.runLater(runnable);
 	}
 
-	private EventHandler<ActionEvent> ejectMenuEventHandler = event ->  {
-		for (String drive : getTargetDrives()) {
-			if (Main.isTestDrive(drive)) {
-				File f = new File(drive);
-				if (f.exists()) {
-					removeDrive(drive);
-					Main.deleteDir(f);
+	private EventHandler<ActionEvent> ejectMenuEventHandler = event -> {
+		Object source = event.getSource();
+		if (!(source instanceof MenuItem)) {
+			return;
+		}
+
+		MenuItem itm = (MenuItem) source;
+		if (itm.getId().equals("eject")) {
+			for (String drive : getTargetDrives()) {
+				if (Main.isTestDrive(drive)) {
+					File f = new File(drive);
+					if (f.exists()) {
+						removeDrive(drive);
+						Utils.deleteDir(f);
+					}
 				}
 			}
+			presenter.ejectSelectedDrives();
+
+		} else if (itm.getId().equals("delete")) {
+			presenter.deleteSDCard();
 		}
-		presenter.ejectSelectedDrives();
 	};
 
 	private void openDirInExplorer() {
@@ -243,7 +290,7 @@ public class MainView extends AnchorPane implements MvpContract.View {
 		if (task != null) {
 			Platform.runLater(() -> {
 				task.subTaskName.set(file.getName() + ": " + fileProgress + "%");
-				task.progress.set((double)totalProgress / 100d);
+				task.progress.set((double) totalProgress / 100d);
 			});
 		}
 	}
@@ -259,11 +306,11 @@ public class MainView extends AnchorPane implements MvpContract.View {
 			return;
 		}
 		Platform.runLater(() -> {
-            if (multiProgressDialog == null) {
-                return;
-            }
-		    multiProgressDialog.removeTaskById(targetDirectory.getAbsolutePath());
-        });
+			if (multiProgressDialog == null) {
+				return;
+			}
+			multiProgressDialog.removeTaskById(targetDirectory.getAbsolutePath());
+		});
 	}
 
 	@Override
@@ -295,6 +342,13 @@ public class MainView extends AnchorPane implements MvpContract.View {
 	}
 
 	@Override
+	public boolean showConfirm(String s) {
+		Alert alert = new Alert(Alert.AlertType.WARNING, s, ButtonType.YES, ButtonType.NO);
+		Optional<ButtonType> ret = alert.showAndWait();
+		return (ret.isPresent() && ret.get() == ButtonType.YES);
+	}
+
+	@Override
 	public void reportAllCopyingCancelled() {
 		if (multiProgressDialog == null) {
 			return;
@@ -319,5 +373,10 @@ public class MainView extends AnchorPane implements MvpContract.View {
 			}
 			multiProgressDialog.removeTaskById(targetDirectory.getAbsolutePath());
 		});
+	}
+
+	@Override
+	public void setEjectCheckboxEnabled(boolean enabled) {
+		chkAutoEject.setDisable(!enabled);
 	}
 }
